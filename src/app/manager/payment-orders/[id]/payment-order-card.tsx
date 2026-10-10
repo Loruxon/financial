@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Decimal } from "decimal.js";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -59,24 +60,19 @@ import {
 import type { IncomingPayment } from "@/modules/incoming-payments/types";
 import type { ExecutionScheme } from "@/modules/execution-schemes/types";
 import type { User } from "@/modules/users/types";
-import type { LedgerEntry, LedgerTransaction } from "@/modules/ledger/types";
+import type { PaymentOrderLedgerRow } from "@/modules/ledger/queries";
 import type {
   PaymentOrderFile,
   PaymentOrderFileType,
   PaymentOrderStatusChange,
 } from "@/modules/payment-orders/types";
 
-type LedgerRow = {
-  entry: LedgerEntry;
-  transaction: LedgerTransaction | undefined;
-};
-
 type PaymentOrderCardProps = {
   order: PaymentOrder;
   statusChanges: PaymentOrderStatusChange[];
   files: PaymentOrderFile[];
   linkedIncomingPayments: IncomingPayment[];
-  ledgerEntries: LedgerRow[];
+  ledgerEntries: PaymentOrderLedgerRow[];
   managers: User[];
   schemes: ExecutionScheme[];
   userNames: { id: string; name: string; kind: string }[];
@@ -288,19 +284,27 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
               <ul className="flex flex-col gap-2">
                 {props.ledgerEntries
                   .slice(0, 5)
-                  .map(({ entry, transaction }) => (
+                  .map(({ transaction, clientAmountRub }) => (
                     <li
-                      key={entry.id}
+                      key={transaction.id}
                       className="flex items-center justify-between gap-4 text-sm"
                     >
                       <span className="text-muted-foreground">
-                        {transaction
-                          ? messages.ledger.transactionType[
-                              transaction.transactionType
-                            ]
-                          : "—"}
+                        {
+                          messages.ledger.transactionType[
+                            transaction.transactionType
+                          ]
+                        }{" "}
+                        · {formatDate(transaction.occurredAt.slice(0, 10))}
                       </span>
-                      <Money value={entry.amountRub} />
+                      {clientAmountRub ? (
+                        <span>
+                          {new Decimal(clientAmountRub).isPositive() ? "+" : ""}
+                          <Money value={clientAmountRub} />
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </li>
                   ))}
               </ul>

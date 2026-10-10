@@ -2,7 +2,7 @@ import { Decimal } from "decimal.js";
 import { getStore, mockLatency } from "@/mocks/store";
 import { requireManager } from "@/modules/auth/guards";
 import type { Money } from "@/modules/shared/types";
-import type { LedgerAccount, LedgerEntry } from "./types";
+import type { LedgerAccount, LedgerEntry, LedgerTransaction } from "./types";
 
 function sumEntries(predicate: (account: LedgerAccount) => boolean): Decimal {
   const store = getStore();
@@ -136,31 +136,41 @@ export async function listLedgerEntries(filter?: { organizationId?: string }) {
     );
 }
 
+export type PaymentOrderLedgerRow = {
+  transaction: LedgerTransaction;
+  /**
+   * Сумма на `organization_held` клиента по этой проводке, со знаком
+   * (плюс — дебет, минус — кредит, как хранится в `LedgerEntry`). Для
+   * карточки заявки: минус показывается как списание, плюс — как возврат.
+   */
+  clientAmountRub: Money | null;
+};
+
 /** Проводки по конкретной заявке — для карточки заявки, не раздела «Журнал проводок». */
-export async function listLedgerEntriesForPaymentOrder(paymentOrderId: string) {
+export async function listLedgerEntriesForPaymentOrder(
+  paymentOrderId: string,
+): Promise<PaymentOrderLedgerRow[]> {
   await requireManager("payment_orders");
   await mockLatency();
   const store = getStore();
-  const transactionIds = new Set(
-    store.ledgerTransactions
-      .filter((t) => t.paymentOrderId === paymentOrderId)
-      .map((t) => t.id),
+  const transactions = store.ledgerTransactions.filter(
+    (t) => t.paymentOrderId === paymentOrderId,
   );
 
-  return store.ledgerEntries
-    .filter((entry) => transactionIds.has(entry.ledgerTransactionId))
-    .map((entry) => {
-      const transaction = store.ledgerTransactions.find(
-        (t) => t.id === entry.ledgerTransactionId,
+  return transactions
+    .map((transaction) => {
+      const entries = store.ledgerEntries.filter(
+        (entry) => entry.ledgerTransactionId === transaction.id,
       );
-      const account = store.ledgerAccounts.find(
-        (a) => a.id === entry.ledgerAccountId,
-      );
-      return { entry, transaction, account };
+      const clientEntry = entries.find((entry) => {
+        const account = store.ledgerAccounts.find(
+          (a) => a.id === entry.ledgerAccountId,
+        );
+        return account?.accountType === "organization_held";
+      });
+      return { transaction, clientAmountRub: clientEntry?.amountRub ?? null };
     })
     .sort((a, b) =>
-      (b.transaction?.occurredAt ?? "").localeCompare(
-        a.transaction?.occurredAt ?? "",
-      ),
+      b.transaction.occurredAt.localeCompare(a.transaction.occurredAt),
     );
 }
