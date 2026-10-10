@@ -235,6 +235,13 @@ export function PaymentOrdersList({
           />
         </div>
         <Select
+          items={[
+            {
+              value: "all",
+              label: messages.paymentOrders.filters.allOrganizations,
+            },
+            ...organizations.map((org) => ({ value: org.id, label: org.name })),
+          ]}
           value={organizationId}
           onValueChange={(value) => setParam("org", value)}
         >
@@ -255,6 +262,10 @@ export function PaymentOrdersList({
           </SelectContent>
         </Select>
         <Select
+          items={[
+            { value: "all", label: messages.paymentOrders.filters.anyAssignee },
+            { value: "mine", label: messages.paymentOrders.filters.mine },
+          ]}
           value={assignee}
           onValueChange={(value) => setParam("assignee", value)}
         >
@@ -271,6 +282,15 @@ export function PaymentOrdersList({
           </SelectContent>
         </Select>
         <Select
+          items={[
+            {
+              value: "all",
+              label: messages.paymentOrders.filters.allCurrencies,
+            },
+            { value: "USD", label: "USD" },
+            { value: "EUR", label: "EUR" },
+            { value: "CNY", label: "CNY" },
+          ]}
           value={currency}
           onValueChange={(value) => setParam("currency", value)}
         >

@@ -34,6 +34,7 @@ export function CurrencySelect({
 }: CurrencySelectProps) {
   return (
     <Select
+      items={currencies.map((code) => ({ value: code, label: code }))}
       value={value}
       onValueChange={(next) => {
         if (next) onValueChange(next);

@@ -145,6 +145,10 @@ export function FileUpload({ documentTypes, onFilesChange }: FileUploadProps) {
                   </span>
                 </div>
                 <Select
+                  items={documentTypes.map((type) => ({
+                    value: type,
+                    label: messages.paymentOrders.fileType[type],
+                  }))}
                   value={entry.fileType}
                   onValueChange={(value) =>
                     setFileType(entry.id, value as PaymentOrderFileType)

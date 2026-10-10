@@ -542,6 +542,10 @@ function AssignmentCard({
       <Field>
         <FieldLabel>{messages.paymentOrders.fields.executionScheme}</FieldLabel>
         <Select
+          items={schemes.map((scheme) => ({
+            value: scheme.id,
+            label: scheme.name,
+          }))}
           value={executionSchemeId ?? undefined}
           disabled={isPending}
           onValueChange={(value) => {
