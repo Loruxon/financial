@@ -14,6 +14,7 @@ export const messages = {
       filters: "Фильтры",
       resetFilters: "Сбросить фильтры",
       search: "Поиск",
+      calculate: "Рассчитать",
     },
     empty: {
       noResults: "Ничего не найдено",
@@ -24,6 +25,7 @@ export const messages = {
       notFound: "Не найдено",
       forbidden: "Недостаточно прав",
       validation: "Проверьте правильность заполнения полей",
+      allFieldsRequired: "Заполните все поля",
     },
     dateFormat: "дд.мм.гггг",
     theme: {
@@ -38,6 +40,16 @@ export const messages = {
     errorTitle: "Что-то пошло не так",
     errorDescription: "Попробуйте обновить страницу",
     retry: "Повторить",
+    saved: "Сохранено",
+    yes: "Да",
+    no: "Нет",
+    appDescription: "Платформа обработки заявок на международные платежи",
+    pagination: {
+      previous: "Назад",
+      next: "Вперёд",
+      page: "Стр.",
+      of: "из",
+    },
   },
 
   nav: {
@@ -128,6 +140,7 @@ export const messages = {
     },
     accounts: {
       title: "Счета",
+      shortLabel: "Счёт",
       fields: {
         accountNumber: "Номер счёта",
         currencies: "Валюты",
@@ -137,6 +150,7 @@ export const messages = {
       noBeneficiaries: "Пока нет ни одного контрагента",
       createFirst: "Добавить первого контрагента",
     },
+    addSheetDescription: "Реквизиты контрагента и его банка",
   },
 
   internalAccounts: {
@@ -170,6 +184,7 @@ export const messages = {
 
   exchangeRates: {
     title: "Курсы валют",
+    cbrRateLabel: "Курс ЦБ",
     source: {
       cbr: "ЦБ РФ",
       nbk: "НБ РК",
@@ -186,6 +201,7 @@ export const messages = {
     title: "Заявки",
     titleOne: "Заявка",
     newTitle: "Новая заявка",
+    submitted: "подана",
     status: {
       submitted: "Новая",
       in_review: "На проверке",
@@ -197,7 +213,7 @@ export const messages = {
       correction_review: "Проверка исправлений",
     },
     fields: {
-      invoiceNumber: "Номер счёта",
+      invoiceNumber: "Номер инвойса",
       amount: "Сумма",
       currency: "Валюта",
       paymentDetails: "Назначение платежа",
@@ -217,6 +233,11 @@ export const messages = {
       managerNote: "Заметка менеджера",
       costAmountRub: "Себестоимость",
       marginRub: "Маржа",
+      costMarkupPercent: "Надбавка, %",
+      isMinFeeApplied: "Применён минимум",
+      status: "Статус",
+      submittedAt: "Дата подачи",
+      organization: "Организация",
     },
     actions: {
       submit: "Подать заявку",
@@ -231,6 +252,8 @@ export const messages = {
     empty: {
       noOrders: "Пока нет ни одной заявки",
       createFirst: "Подать первую заявку",
+      noOrdersDescription:
+        "Измените фильтры или подождите новые заявки от клиентов.",
     },
     fileSection: {
       payment: "Платёж",
@@ -246,6 +269,67 @@ export const messages = {
       order_form: "Бланк-заказ",
       other: "Другое",
     },
+    sections: {
+      payment: "Платёж",
+      beneficiaryAndBank: "Контрагент и банк",
+      funding: "Фондирование",
+      documents: "Документы",
+      assignment: "Исполнитель и схема",
+      clientCharge: "Расчёт для клиента",
+      statusHistory: "История статусов",
+      ledgerEntries: "Проводки по заявке",
+      clientVisibility: "Видимость для клиента",
+    },
+    visibilityFields: {
+      swift: "SWIFT-подтверждение",
+      execution: "Расчёт исполнения",
+    },
+    correctionFields: {
+      amount: "Сумма и валюта",
+    },
+    filters: {
+      allOrganizations: "Все организации",
+      anyAssignee: "Любой исполнитель",
+      mine: "Мои",
+      allCurrencies: "Все валюты",
+    },
+    tabs: {
+      action: "Требуют действия",
+      inProgress: "В работе",
+      closed: "Закрытые",
+      all: "Все",
+    },
+    validation: {
+      invoiceNumberRequired: "Укажите номер инвойса",
+      amountRequired: "Укажите сумму",
+      currencyRequired: "Выберите валюту",
+      beneficiaryRequired: "Выберите контрагента",
+      fundingRequired: "Выберите хотя бы одно поступление",
+      fundingAmountRequired: "Укажите сумму фондирования",
+      executionDateAndRateRequired: "Укажите дату исполнения и курс",
+      costFieldsRequired: "Заполните дату, курс и надбавку",
+    },
+    linkedIncomingPayments: "Привязанные поступления",
+    noLedgerEntries: "Проводок пока нет",
+    searchPlaceholder: "Инвойс или контрагент",
+    noAvailableIncomingPayments: "Нет подтверждённых поступлений с остатком",
+    closeConfirm: {
+      title: "Закрыть заявку?",
+      description:
+        "После закрытия изменить расчёт и себестоимость будет нельзя.",
+    },
+    cancelConfirm: {
+      title: "Отменить заявку?",
+      description: "Введённые данные будут потеряны.",
+    },
+    correctionDialogDescription:
+      "Выберите, что может исправить клиент, и опишите проблему.",
+    statusUpdated: "Статус заявки обновлён",
+    correctionRequested: "Заявка отправлена клиенту на исправление",
+    clientChargeCalculated: "Расчёт для клиента выполнен",
+    costCalculated: "Себестоимость рассчитана",
+    noteSaved: "Заметка сохранена",
+    managerNoteHint: "Клиент видит эту заметку только для чтения.",
   },
 
   incomingPayments: {
@@ -307,7 +391,7 @@ export const messages = {
       executed: "Исполнен",
     },
     fields: {
-      invoiceNumber: "Номер счёта",
+      invoiceNumber: "Номер инвойса",
       amountRub: "Сумма",
       supplier: "Поставщик",
       internalAccount: "Внутренний счёт",
@@ -354,6 +438,7 @@ export const messages = {
 
   fileUpload: {
     dropHint: "Перетащите файлы сюда или выберите на компьютере",
+    uploaded: "Файлы загружены",
   },
 
   auth: {

@@ -5,6 +5,7 @@ import { ConfirmDialogProvider } from "@/components/custom/confirm-dialog";
 import { ThemeProvider } from "@/components/custom/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { messages } from "@/messages/ru";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Financial Systems",
-  description: "Платформа обработки заявок на международные платежи",
+  description: messages.common.appDescription,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

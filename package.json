@@ -10,8 +10,9 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "check:ui": "node scripts/check-ui-pristine.mjs",
+    "check:text": "node scripts/check-no-hardcoded-text.mjs",
     "test": "vitest run",
-    "check": "pnpm lint && pnpm typecheck && pnpm check:ui && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm check:ui && pnpm check:text && pnpm test"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

@@ -119,7 +119,7 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 flex flex-col gap-6">
-          <SectionCard title="Платёж">
+          <SectionCard title={messages.paymentOrders.sections.payment}>
             <DescriptionList
               columns={2}
               items={[
@@ -144,7 +144,9 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
             />
           </SectionCard>
 
-          <SectionCard title="Контрагент и банк">
+          <SectionCard
+            title={messages.paymentOrders.sections.beneficiaryAndBank}
+          >
             <DescriptionList
               columns={2}
               items={[
@@ -152,13 +154,22 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
                   label: messages.paymentOrders.fields.beneficiary,
                   value: order.beneficiaryName,
                 },
-                { label: "Адрес", value: order.beneficiaryAddress },
+                {
+                  label: messages.beneficiaries.fields.address,
+                  value: order.beneficiaryAddress,
+                },
                 {
                   label: messages.paymentOrders.fields.beneficiaryBank,
                   value: order.beneficiaryBankName,
                 },
-                { label: "Адрес банка", value: order.beneficiaryBankAddress },
-                { label: "SWIFT / BIC", value: order.beneficiarySwiftCode },
+                {
+                  label: messages.beneficiaries.banks.fields.address,
+                  value: order.beneficiaryBankAddress,
+                },
+                {
+                  label: messages.beneficiaries.banks.fields.swiftCode,
+                  value: order.beneficiarySwiftCode,
+                },
                 {
                   label: messages.paymentOrders.fields.beneficiaryAccount,
                   value: order.beneficiaryAccountNumber
@@ -169,7 +180,7 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
             />
           </SectionCard>
 
-          <SectionCard title="Фондирование">
+          <SectionCard title={messages.paymentOrders.sections.funding}>
             <DescriptionList
               columns={2}
               items={[
@@ -178,7 +189,7 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
                   value: order.payerName,
                 },
                 {
-                  label: "ИНН",
+                  label: messages.payers.fields.inn,
                   value: order.payerInn ? formatInn(order.payerInn) : null,
                 },
                 {
@@ -186,13 +197,13 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
                   value: order.internalAccountName,
                 },
                 {
-                  label: "Сумма фондирования",
+                  label: messages.paymentOrders.fields.fundingAmountRub,
                   value: order.fundingAmountRub ? (
                     <Money value={order.fundingAmountRub} />
                   ) : null,
                 },
                 {
-                  label: "Дата фондирования",
+                  label: messages.paymentOrders.fields.fundingDate,
                   value: order.fundingDate
                     ? formatDate(order.fundingDate)
                     : null,
@@ -202,7 +213,7 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
             {props.linkedIncomingPayments.length > 0 ? (
               <div className="flex flex-col gap-2">
                 <span className="text-muted-foreground text-sm">
-                  Привязанные поступления
+                  {messages.paymentOrders.linkedIncomingPayments}
                 </span>
                 <ul className="flex flex-col gap-2">
                   {props.linkedIncomingPayments.map((payment) => (
@@ -244,7 +255,7 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
             onChanged={() => router.refresh()}
           />
           <CostCard order={order} onChanged={() => router.refresh()} />
-          <SectionCard title="История статусов">
+          <SectionCard title={messages.paymentOrders.sections.statusHistory}>
             <StatusTimeline
               items={props.statusChanges.map((change) => ({
                 id: change.id,
@@ -256,7 +267,7 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
             />
           </SectionCard>
           <SectionCard
-            title="Проводки по заявке"
+            title={messages.paymentOrders.sections.ledgerEntries}
             actions={
               <Link
                 href="/manager/ledger"
@@ -267,7 +278,9 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
             }
           >
             {props.ledgerEntries.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Проводок пока нет</p>
+              <p className="text-muted-foreground text-sm">
+                {messages.paymentOrders.noLedgerEntries}
+              </p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {props.ledgerEntries
@@ -312,9 +325,8 @@ function TransitionActions({
     startTransition(async () => {
       if (toStatus === "closed") {
         const confirmed = await confirm({
-          title: "Закрыть заявку?",
-          description:
-            "После закрытия изменить расчёт и себестоимость будет нельзя.",
+          title: messages.paymentOrders.closeConfirm.title,
+          description: messages.paymentOrders.closeConfirm.description,
           confirmLabel: messages.paymentOrders.actions.close,
         });
         if (!confirmed) return;
@@ -324,7 +336,7 @@ function TransitionActions({
         toStatus,
       });
       if (result.ok) {
-        toast.success("Статус заявки обновлён");
+        toast.success(messages.paymentOrders.statusUpdated);
         onChanged();
       } else {
         toast.error(result.error);
@@ -404,7 +416,7 @@ function CorrectionDialog({
         canClientEditClosingDocuments: editClosingDocuments,
       });
       if (result.ok) {
-        toast.success("Заявка отправлена клиенту на исправление");
+        toast.success(messages.paymentOrders.correctionRequested);
         onOpenChange(false);
         setComment("");
         onChanged();
@@ -422,7 +434,7 @@ function CorrectionDialog({
             {messages.paymentOrders.actions.requestCorrection}
           </DialogTitle>
           <DialogDescription>
-            Выберите, что может исправить клиент, и опишите проблему.
+            {messages.paymentOrders.correctionDialogDescription}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
@@ -432,7 +444,7 @@ function CorrectionDialog({
                 checked={editPayment}
                 onCheckedChange={(v) => setEditPayment(!!v)}
               />
-              {messages.paymentOrders.fields.amount} и валюта
+              {messages.paymentOrders.correctionFields.amount}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
@@ -446,18 +458,20 @@ function CorrectionDialog({
                 checked={editDocuments}
                 onCheckedChange={(v) => setEditDocuments(!!v)}
               />
-              Документы
+              {messages.paymentOrders.sections.documents}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={editClosingDocuments}
                 onCheckedChange={(v) => setEditClosingDocuments(!!v)}
               />
-              Закрывающие документы
+              {messages.paymentOrders.fileSection.closing}
             </label>
           </div>
           <Field>
-            <FieldLabel htmlFor="correction-comment">Комментарий</FieldLabel>
+            <FieldLabel htmlFor="correction-comment">
+              {messages.ledger.fields.comment}
+            </FieldLabel>
             <Textarea
               id="correction-comment"
               value={comment}
@@ -506,13 +520,13 @@ function AssignmentCard({
         paymentOrderId: order.id,
         ...next,
       });
-      if (result.ok) toast.success("Сохранено");
+      if (result.ok) toast.success(messages.common.saved);
       else toast.error(result.error);
     });
   }
 
   return (
-    <SectionCard title="Исполнитель и схема">
+    <SectionCard title={messages.paymentOrders.sections.assignment}>
       <Field>
         <FieldLabel>{messages.paymentOrders.fields.assignee}</FieldLabel>
         <EntityCombobox
@@ -568,7 +582,9 @@ function ClientChargeCard({
 
   function calculate() {
     if (!executionDate || !rate) {
-      toast.error("Укажите дату исполнения и курс");
+      toast.error(
+        messages.paymentOrders.validation.executionDateAndRateRequired,
+      );
       return;
     }
     startTransition(async () => {
@@ -578,7 +594,7 @@ function ClientChargeCard({
         clientExchangeRate: rate,
       });
       if (result.ok) {
-        toast.success("Расчёт для клиента выполнен");
+        toast.success(messages.paymentOrders.clientChargeCalculated);
         onChanged();
       } else {
         toast.error(result.error);
@@ -587,7 +603,7 @@ function ClientChargeCard({
   }
 
   return (
-    <SectionCard title="Расчёт для клиента">
+    <SectionCard title={messages.paymentOrders.sections.clientCharge}>
       <Field>
         <FieldLabel>{messages.paymentOrders.fields.executionDate}</FieldLabel>
         <DateField value={executionDate} onValueChange={setExecutionDate} />
@@ -603,12 +619,12 @@ function ClientChargeCard({
         />
         {cbrRateHint ? (
           <p className="text-muted-foreground text-sm">
-            Курс ЦБ: {cbrRateHint}
+            {messages.exchangeRates.cbrRateLabel}: {cbrRateHint}
           </p>
         ) : null}
       </Field>
       <Button variant="outline" onClick={calculate} disabled={isPending}>
-        Рассчитать
+        {messages.common.actions.calculate}
       </Button>
       {order.clientChargeRub ? (
         <DescriptionList
@@ -651,7 +667,7 @@ function CostCard({
 
   function calculate() {
     if (!costExecutionDate || !costExchangeRate || !costMarkupPercent) {
-      toast.error("Заполните дату, курс и надбавку");
+      toast.error(messages.paymentOrders.validation.costFieldsRequired);
       return;
     }
     startTransition(async () => {
@@ -662,7 +678,7 @@ function CostCard({
         costMarkupPercent,
       });
       if (result.ok) {
-        toast.success("Себестоимость рассчитана");
+        toast.success(messages.paymentOrders.costCalculated);
         onChanged();
       } else {
         toast.error(result.error);
@@ -671,16 +687,18 @@ function CostCard({
   }
 
   return (
-    <SectionCard title="Себестоимость">
+    <SectionCard title={messages.paymentOrders.fields.costAmountRub}>
       <Field>
-        <FieldLabel>Дата исполнения</FieldLabel>
+        <FieldLabel>{messages.paymentOrders.fields.executionDate}</FieldLabel>
         <DateField
           value={costExecutionDate}
           onValueChange={setCostExecutionDate}
         />
       </Field>
       <Field>
-        <FieldLabel>Курс</FieldLabel>
+        <FieldLabel>
+          {messages.paymentOrders.fields.clientExchangeRate}
+        </FieldLabel>
         <Input
           value={costExchangeRate}
           onChange={(e) => setCostExchangeRate(e.target.value)}
@@ -688,7 +706,9 @@ function CostCard({
         />
       </Field>
       <Field>
-        <FieldLabel>Надбавка, %</FieldLabel>
+        <FieldLabel>
+          {messages.paymentOrders.fields.costMarkupPercent}
+        </FieldLabel>
         <Input
           value={costMarkupPercent}
           onChange={(e) => setCostMarkupPercent(e.target.value)}
@@ -696,7 +716,7 @@ function CostCard({
         />
       </Field>
       <Button variant="outline" onClick={calculate} disabled={isPending}>
-        Рассчитать
+        {messages.common.actions.calculate}
       </Button>
       {order.costAmountRub ? (
         <DescriptionList
@@ -711,8 +731,10 @@ function CostCard({
               value: order.marginRub ? <Money value={order.marginRub} /> : null,
             },
             {
-              label: "Применён минимум",
-              value: order.isMinFeeApplied ? "Да" : "Нет",
+              label: messages.paymentOrders.fields.isMinFeeApplied,
+              value: order.isMinFeeApplied
+                ? messages.common.yes
+                : messages.common.no,
             },
           ]}
         />
@@ -751,13 +773,13 @@ function DocumentsCard({
       if (!result.ok) toast.error(result.error);
     }
     if (entries.length > 0) {
-      toast.success("Файлы загружены");
+      toast.success(messages.fileUpload.uploaded);
       onChanged();
     }
   }
 
   return (
-    <SectionCard title="Документы">
+    <SectionCard title={messages.paymentOrders.sections.documents}>
       <Tabs defaultValue="payment">
         <TabsList>
           {sections.map((section) => (
@@ -802,15 +824,17 @@ function VisibilityCard({ order }: { order: PaymentOrder }) {
         paymentOrderId: order.id,
         ...next,
       });
-      if (result.ok) toast.success("Сохранено");
+      if (result.ok) toast.success(messages.common.saved);
       else toast.error(result.error);
     });
   }
 
   return (
-    <SectionCard title="Видимость для клиента">
+    <SectionCard title={messages.paymentOrders.sections.clientVisibility}>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm">SWIFT-подтверждение</span>
+        <span className="text-sm">
+          {messages.paymentOrders.visibilityFields.swift}
+        </span>
         <Switch
           checked={swift}
           disabled={isPending}
@@ -825,7 +849,9 @@ function VisibilityCard({ order }: { order: PaymentOrder }) {
         />
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm">Бланк-заказ</span>
+        <span className="text-sm">
+          {messages.paymentOrders.fileType.order_form}
+        </span>
         <Switch
           checked={orderForm}
           disabled={isPending}
@@ -840,7 +866,9 @@ function VisibilityCard({ order }: { order: PaymentOrder }) {
         />
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm">Расчёт исполнения</span>
+        <span className="text-sm">
+          {messages.paymentOrders.visibilityFields.execution}
+        </span>
         <Switch
           checked={execution}
           disabled={isPending}
@@ -868,17 +896,17 @@ function ManagerNoteCard({ order }: { order: PaymentOrder }) {
         paymentOrderId: order.id,
         managerNote: note,
       });
-      if (result.ok) toast.success("Заметка сохранена");
+      if (result.ok) toast.success(messages.paymentOrders.noteSaved);
       else toast.error(result.error);
     });
   }
 
   return (
-    <SectionCard title="Заметка менеджера">
+    <SectionCard title={messages.paymentOrders.fields.managerNote}>
       <Field>
         <Textarea value={note} onChange={(e) => setNote(e.target.value)} />
         <p className="text-muted-foreground text-sm">
-          Клиент видит эту заметку только для чтения.
+          {messages.paymentOrders.managerNoteHint}
         </p>
       </Field>
       <Button

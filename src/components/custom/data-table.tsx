@@ -318,6 +318,7 @@ export function DataTable<TData>({
             <PaginationItem>
               <PaginationPrevious
                 href="#"
+                text={messages.common.pagination.previous}
                 aria-disabled={page <= 1}
                 className={
                   page <= 1 ? "pointer-events-none opacity-50" : undefined
@@ -331,12 +332,14 @@ export function DataTable<TData>({
             </PaginationItem>
             <PaginationItem>
               <span className="text-muted-foreground px-2 text-sm">
-                {page} / {Math.max(1, pageCount)}
+                {messages.common.pagination.page} {page}{" "}
+                {messages.common.pagination.of} {Math.max(1, pageCount)}
               </span>
             </PaginationItem>
             <PaginationItem>
               <PaginationNext
                 href="#"
+                text={messages.common.pagination.next}
                 aria-disabled={page >= pageCount}
                 className={
                   page >= pageCount

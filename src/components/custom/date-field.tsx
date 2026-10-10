@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { formatDate } from "@/lib/format";
+import { messages } from "@/messages/ru";
 import type { IsoDate } from "@/modules/shared/types";
 
 type DateFieldProps = {
@@ -85,7 +86,7 @@ export function DateField({
         <Input
           id={id}
           value={text}
-          placeholder="ДД.ММ.ГГГГ"
+          placeholder={messages.common.dateFormat.toUpperCase()}
           disabled={disabled}
           onChange={(e) => handleTextChange(e.target.value)}
           onBlur={handleBlur}

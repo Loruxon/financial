@@ -52,10 +52,10 @@ const TAB_BUCKETS = {
 type TabValue = keyof typeof TAB_BUCKETS;
 
 const TAB_LABELS: Record<TabValue, string> = {
-  action: "Требуют действия",
-  in_progress: "В работе",
-  closed: "Закрытые",
-  all: "Все",
+  action: messages.paymentOrders.tabs.action,
+  in_progress: messages.paymentOrders.tabs.inProgress,
+  closed: messages.paymentOrders.tabs.closed,
+  all: messages.paymentOrders.tabs.all,
 };
 
 export function PaymentOrdersList({
@@ -134,28 +134,28 @@ export function PaymentOrdersList({
       },
       {
         id: "submittedAt",
-        header: "Дата подачи",
+        header: messages.paymentOrders.fields.submittedAt,
         accessorFn: (order) => order.submittedAt ?? order.createdAt,
         cell: ({ getValue }) =>
           formatDate((getValue<string>() ?? "").slice(0, 10)),
       },
       {
         id: "organization",
-        header: "Организация",
+        header: messages.paymentOrders.fields.organization,
         accessorFn: (order) =>
           organizationName.get(order.organizationId) ?? order.organizationId,
       },
       {
         accessorKey: "beneficiaryName",
-        header: "Контрагент",
+        header: messages.paymentOrders.fields.beneficiary,
       },
       {
         accessorKey: "invoiceNumber",
-        header: "Инвойс",
+        header: messages.paymentOrders.fields.invoiceNumber,
       },
       {
         id: "amount",
-        header: "Сумма",
+        header: messages.paymentOrders.fields.amount,
         accessorFn: (order) => order.amount ?? "",
         meta: { align: "right" },
         cell: ({ row }) =>
@@ -170,7 +170,7 @@ export function PaymentOrdersList({
       },
       {
         id: "fundingAmountRub",
-        header: "Сумма фондирования, ₽",
+        header: `${messages.paymentOrders.fields.fundingAmountRub}, ₽`,
         accessorFn: (order) => order.fundingAmountRub ?? "",
         meta: { align: "right" },
         cell: ({ getValue }) => {
@@ -180,14 +180,14 @@ export function PaymentOrdersList({
       },
       {
         accessorKey: "status",
-        header: "Статус",
+        header: messages.paymentOrders.fields.status,
         cell: ({ row }) => (
           <StatusBadge entity="paymentOrders" status={row.original.status} />
         ),
       },
       {
         id: "assignee",
-        header: "Исполнитель",
+        header: messages.paymentOrders.fields.assignee,
         accessorFn: (order) =>
           order.assigneeUserId
             ? (managerName.get(order.assigneeUserId) ?? "—")
@@ -195,7 +195,7 @@ export function PaymentOrdersList({
       },
       {
         id: "margin",
-        header: "Маржа, ₽",
+        header: `${messages.paymentOrders.fields.marginRub}, ₽`,
         accessorFn: (order) => order.marginRub ?? "",
         meta: { align: "right" },
         cell: ({ getValue }) => {
@@ -228,7 +228,7 @@ export function PaymentOrdersList({
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
-            placeholder="Инвойс или контрагент"
+            placeholder={messages.paymentOrders.searchPlaceholder}
             defaultValue={search}
             className="w-64 pl-8"
             onChange={(e) => setParam("q", e.target.value)}
@@ -244,7 +244,9 @@ export function PaymentOrdersList({
             />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все организации</SelectItem>
+            <SelectItem value="all">
+              {messages.paymentOrders.filters.allOrganizations}
+            </SelectItem>
             {organizations.map((org) => (
               <SelectItem key={org.id} value={org.id}>
                 {org.name}
@@ -260,8 +262,12 @@ export function PaymentOrdersList({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Любой исполнитель</SelectItem>
-            <SelectItem value="mine">Мои</SelectItem>
+            <SelectItem value="all">
+              {messages.paymentOrders.filters.anyAssignee}
+            </SelectItem>
+            <SelectItem value="mine">
+              {messages.paymentOrders.filters.mine}
+            </SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -272,7 +278,9 @@ export function PaymentOrdersList({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все валюты</SelectItem>
+            <SelectItem value="all">
+              {messages.paymentOrders.filters.allCurrencies}
+            </SelectItem>
             <SelectItem value="USD">USD</SelectItem>
             <SelectItem value="EUR">EUR</SelectItem>
             <SelectItem value="CNY">CNY</SelectItem>
@@ -291,7 +299,7 @@ export function PaymentOrdersList({
           <EmptyState
             icon={Inbox}
             title={messages.paymentOrders.empty.noOrders}
-            description="Измените фильтры или подождите новые заявки от клиентов."
+            description={messages.paymentOrders.empty.noOrdersDescription}
           />
         }
       />

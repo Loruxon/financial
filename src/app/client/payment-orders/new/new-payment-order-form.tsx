@@ -127,14 +127,14 @@ export function NewPaymentOrderForm({
 
   function validate(): Record<string, string> {
     const next: Record<string, string> = {};
-    if (!beneficiaryId) next.beneficiaryId = "Выберите контрагента";
-    if (!invoiceNumber.trim()) next.invoiceNumber = "Укажите номер счёта";
-    if (!amount || Number(amount) <= 0) next.amount = "Укажите сумму";
-    if (!currency) next.currency = "Выберите валюту";
-    if (selectedPaymentIds.length === 0)
-      next.funding = "Выберите хотя бы одно поступление";
+    const v = messages.paymentOrders.validation;
+    if (!beneficiaryId) next.beneficiaryId = v.beneficiaryRequired;
+    if (!invoiceNumber.trim()) next.invoiceNumber = v.invoiceNumberRequired;
+    if (!amount || Number(amount) <= 0) next.amount = v.amountRequired;
+    if (!currency) next.currency = v.currencyRequired;
+    if (selectedPaymentIds.length === 0) next.funding = v.fundingRequired;
     if (!fundingAmountRub || Number(fundingAmountRub) <= 0) {
-      next.fundingAmountRub = "Укажите сумму фондирования";
+      next.fundingAmountRub = v.fundingAmountRequired;
     }
     return next;
   }
@@ -174,7 +174,9 @@ export function NewPaymentOrderForm({
         });
         if (!fileResult.ok) toast.error(fileResult.error);
       }
-      toast.success(`Заявка № ${getPaymentOrderNumber(result.data.id)} подана`);
+      toast.success(
+        `${messages.paymentOrders.titleOne} № ${getPaymentOrderNumber(result.data.id)} ${messages.paymentOrders.submitted}`,
+      );
       router.push(`/client/payment-orders/${result.data.id}`);
     });
   }
@@ -182,8 +184,8 @@ export function NewPaymentOrderForm({
   async function handleCancel() {
     if (isDirty) {
       const confirmed = await confirm({
-        title: "Отменить заявку?",
-        description: "Введённые данные будут потеряны.",
+        title: messages.paymentOrders.cancelConfirm.title,
+        description: messages.paymentOrders.cancelConfirm.description,
       });
       if (!confirmed) return;
     }
@@ -192,7 +194,7 @@ export function NewPaymentOrderForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <FormSection title="Контрагент">
+      <FormSection title={messages.beneficiaries.titleOne}>
         <Field
           id="field-beneficiaryId"
           data-invalid={errors.beneficiaryId ? "true" : undefined}
@@ -222,12 +224,15 @@ export function NewPaymentOrderForm({
               {selected.bank.name}, {selected.bank.address}
             </span>
             <span>SWIFT: {selected.bank.swiftCode}</span>
-            <span>Счёт: {selected.account.accountNumber}</span>
+            <span>
+              {messages.beneficiaries.accounts.shortLabel}:{" "}
+              {selected.account.accountNumber}
+            </span>
           </div>
         ) : null}
       </FormSection>
 
-      <FormSection title="Платёж">
+      <FormSection title={messages.paymentOrders.sections.payment}>
         <Field
           id="field-invoiceNumber"
           data-invalid={errors.invoiceNumber ? "true" : undefined}
@@ -287,19 +292,23 @@ export function NewPaymentOrderForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Фондирование">
+      <FormSection title={messages.paymentOrders.sections.funding}>
         <div id="field-funding" className="flex flex-col gap-2">
           {incomingPayments.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              Нет подтверждённых поступлений с остатком
+              {messages.paymentOrders.noAvailableIncomingPayments}
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead />
-                  <TableHead>Дата</TableHead>
-                  <TableHead className="text-right">Остаток</TableHead>
+                  <TableHead>
+                    {messages.incomingPayments.fields.paymentDate}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {messages.paymentOrders.fields.clientRemainderRub}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -328,7 +337,9 @@ export function NewPaymentOrderForm({
           id="field-fundingAmountRub"
           data-invalid={errors.fundingAmountRub ? "true" : undefined}
         >
-          <FieldLabel>Сумма фондирования</FieldLabel>
+          <FieldLabel>
+            {messages.paymentOrders.fields.fundingAmountRub}
+          </FieldLabel>
           <MoneyInput
             value={fundingAmountRub}
             onValueChange={(value) => {
@@ -344,7 +355,10 @@ export function NewPaymentOrderForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Документы" separator={false}>
+      <FormSection
+        title={messages.paymentOrders.sections.documents}
+        separator={false}
+      >
         <FileUpload documentTypes={DOCUMENT_TYPES} onFilesChange={setFiles} />
       </FormSection>
 
@@ -405,7 +419,7 @@ function AddBeneficiarySheet({
       !accountNumber ||
       currencies.length === 0
     ) {
-      toast.error("Заполните все поля");
+      toast.error(messages.common.errors.allFieldsRequired);
       return;
     }
     startTransition(async () => {
@@ -440,7 +454,9 @@ function AddBeneficiarySheet({
       <SheetContent>
         <SheetHeader>
           <SheetTitle>{messages.beneficiaries.empty.createFirst}</SheetTitle>
-          <SheetDescription>Реквизиты контрагента и его банка</SheetDescription>
+          <SheetDescription>
+            {messages.beneficiaries.addSheetDescription}
+          </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-4 px-4">
           <Field>

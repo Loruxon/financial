@@ -97,8 +97,6 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
 export function useConfirm(): Confirm {
   const ctx = useContext(ConfirmContext);
   if (!ctx)
-    throw new Error(
-      "useConfirm() должен вызываться внутри ConfirmDialogProvider",
-    );
+    throw new Error("useConfirm() must be called within ConfirmDialogProvider");
   return ctx;
 }
