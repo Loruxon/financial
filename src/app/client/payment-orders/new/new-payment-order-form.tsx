@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useBreadcrumbLabel } from "@/components/custom/breadcrumbs";
 import { useConfirm } from "@/components/custom/confirm-dialog";
 import { CurrencySelect } from "@/components/custom/currency-select";
 import { EntityCombobox } from "@/components/custom/entity-combobox";
@@ -77,6 +78,7 @@ export function NewPaymentOrderForm({
 }: NewPaymentOrderFormProps) {
   const router = useRouter();
   const confirm = useConfirm();
+  useBreadcrumbLabel(messages.paymentOrders.newTitle);
   const [beneficiaries, setBeneficiaries] = useState(initialBeneficiaries);
   const [beneficiaryId, setBeneficiaryId] = useState<string | null>(null);
   const [addSheetOpen, setAddSheetOpen] = useState(false);

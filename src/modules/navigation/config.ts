@@ -154,21 +154,28 @@ export const MANAGER_NAV: NavItem[] = [
   },
 ];
 
-/** Для хлебных крошек: href → заголовок, по всем известным статическим маршрутам. */
-export function buildBreadcrumbTitles(): Map<string, string> {
-  const map = new Map<string, string>();
-  map.set("/client", messages.nav.client.overview);
-  map.set("/manager", messages.nav.manager.overview);
-  map.set("/account", messages.nav.manager.account);
+export type BreadcrumbEntry = { title: string; groupTitle?: string };
+
+/**
+ * Для хлебных крошек: href → заголовок (и заголовок родительской группы меню,
+ * если пункт лежит внутри неё), по всем известным статическим маршрутам.
+ */
+export function buildBreadcrumbTitles(): Map<string, BreadcrumbEntry> {
+  const map = new Map<string, BreadcrumbEntry>();
+  map.set("/client", { title: messages.nav.client.overview });
+  map.set("/manager", { title: messages.nav.manager.overview });
+  map.set("/account", { title: messages.nav.manager.account });
 
   for (const item of CLIENT_NAV) {
-    map.set(item.href, item.title);
+    map.set(item.href, { title: item.title });
   }
   for (const item of MANAGER_NAV) {
     if (isNavGroup(item)) {
-      for (const sub of item.items) map.set(sub.href, sub.title);
+      for (const sub of item.items) {
+        map.set(sub.href, { title: sub.title, groupTitle: item.title });
+      }
     } else {
-      map.set(item.href, item.title);
+      map.set(item.href, { title: item.title });
     }
   }
   return map;

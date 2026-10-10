@@ -36,6 +36,7 @@ import { PageHeader } from "@/components/custom/page-header";
 import { SectionCard } from "@/components/custom/section-card";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { StatusTimeline } from "@/components/custom/status-timeline";
+import { useBreadcrumbLabel } from "@/components/custom/breadcrumbs";
 import { useConfirm } from "@/components/custom/confirm-dialog";
 import { formatAccountNumber, formatDate, formatInn } from "@/lib/format";
 import { messages } from "@/messages/ru";
@@ -98,11 +99,13 @@ export function PaymentOrderCard(props: PaymentOrderCardProps) {
   const router = useRouter();
   const userName = (id: string | null) =>
     id ? (userNames.find((u) => u.id === id)?.name ?? id) : null;
+  const title = `${messages.paymentOrders.titleOne} № ${getPaymentOrderNumber(order.id)}`;
+  useBreadcrumbLabel(title);
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={`${messages.paymentOrders.titleOne} № ${getPaymentOrderNumber(order.id)}`}
+        title={title}
         meta={
           <>
             <StatusBadge entity="paymentOrders" status={order.status} />
