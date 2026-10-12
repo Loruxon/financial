@@ -468,7 +468,7 @@ export async function calculateClientCharge(
       heldAmountRub: currentlyHeld,
       clientChargeRub,
       createdByUserId: user.id,
-      idempotencyKey: `payment_order_hold_adjusted:${order.id}:${Date.now()}`,
+      idempotencyKey: `payment_order_hold_adjusted:${order.id}:${clientChargeRub}`,
     });
   }
 

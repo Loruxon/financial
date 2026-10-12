@@ -13,7 +13,10 @@ vi.mock("next/headers", () => ({
 
 import { getStore, resetStore } from "@/mocks/store";
 import { getOrganizationAvailableBalance } from "@/modules/ledger/queries";
-import { postOpeningBalance } from "@/modules/ledger/post";
+import {
+  postOpeningBalance,
+  postPaymentOrderHoldAdjusted,
+} from "@/modules/ledger/post";
 import type { PaymentOrder } from "./types";
 import { calculateClientCharge } from "./actions";
 
@@ -91,6 +94,14 @@ beforeEach(() => {
     updatedAt: "2026-01-02T18:00:00.000Z",
   };
   store.paymentOrders.push(order);
+  store.paymentOrders.push({
+    ...order,
+    id: "po_in_review",
+    status: "in_review",
+    clientExchangeRate: null,
+    clientChargeRub: null,
+    clientRemainderRub: null,
+  });
 
   postOpeningBalance({ internalAccountId: "ia_test", amountRub: "0.00" });
 });
@@ -107,5 +118,43 @@ describe("calculateClientCharge", () => {
 
     expect(result.ok).toBe(false);
     expect(getOrganizationAvailableBalance(ORG_ID)).toBe(balanceBefore);
+  });
+
+  it("posts exactly one adjustment when called twice with identical numbers", async () => {
+    const heldBeforeFirstCall = "0.00";
+
+    const first = await calculateClientCharge({
+      paymentOrderId: "po_in_review",
+      executionDate: "2026-01-03",
+      clientExchangeRate: "91.0000",
+    });
+    expect(first.ok).toBe(true);
+    const clientChargeRub =
+      first.ok && first.data.clientChargeRub ? first.data.clientChargeRub : "";
+    expect(clientChargeRub).not.toBe("");
+
+    // Simulate a duplicate submission racing the first one: it builds its
+    // idempotency key from order id + client charge, as calculateClientCharge
+    // does, and reads the same pre-adjustment held amount the first call
+    // read (before either committed) rather than the now-updated one. A
+    // time-based key (the bug this guards against) would wrongly treat
+    // this as a distinct transaction.
+    vi.useFakeTimers();
+    vi.advanceTimersByTime(5000);
+    postPaymentOrderHoldAdjusted({
+      paymentOrderId: "po_in_review",
+      organizationId: ORG_ID,
+      heldAmountRub: heldBeforeFirstCall,
+      clientChargeRub,
+      idempotencyKey: `payment_order_hold_adjusted:po_in_review:${clientChargeRub}`,
+    });
+    vi.useRealTimers();
+
+    const adjustments = getStore().ledgerTransactions.filter(
+      (t) =>
+        t.transactionType === "payment_order_hold_adjusted" &&
+        t.paymentOrderId === "po_in_review",
+    );
+    expect(adjustments).toHaveLength(1);
   });
 });
