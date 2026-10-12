@@ -14,7 +14,11 @@ export async function signInAsMockUser(formData: FormData): Promise<void> {
     throw new Error("Не указан пользователь");
   }
   const cookieStore = await cookies();
-  cookieStore.set(MOCK_USER_COOKIE, userId, { path: "/" });
+  cookieStore.set(MOCK_USER_COOKIE, userId, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+  });
   redirect("/");
 }
 
