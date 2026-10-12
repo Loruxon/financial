@@ -731,6 +731,30 @@ export async function addPaymentOrderFile(
     }
   }
 
+  if (order.status === "closed") {
+    return { ok: false, error: "Заявка закрыта, загрузка файлов недоступна" };
+  }
+  if (user.kind === "client") {
+    if (parsed.data.section === "bank") {
+      return { ok: false, error: "Загрузка в этот раздел недоступна" };
+    }
+    if (
+      parsed.data.section === "payment" &&
+      !(order.canClientEditDocuments && order.status === "needs_correction")
+    ) {
+      return { ok: false, error: "Загрузка в этот раздел недоступна" };
+    }
+    if (
+      parsed.data.section === "closing" &&
+      !(
+        order.status === "awaiting_closing_documents" ||
+        order.canClientEditClosingDocuments
+      )
+    ) {
+      return { ok: false, error: "Загрузка в этот раздел недоступна" };
+    }
+  }
+
   await mockLatency();
   const file: PaymentOrderFile = {
     id: createId("po_file"),
