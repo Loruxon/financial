@@ -33,6 +33,19 @@ export const PAYMENT_ORDER_TRANSITIONS: readonly Transition[] = [
   { from: "correction_review", to: "needs_correction", allowedBy: "manager" },
 ];
 
+/**
+ * Статусы, в которых разрешён расчёт для клиента и себестоимости
+ * (`calculateClientCharge`, `calculateCost`). В `closed` расчёт запрещён —
+ * пересчитывать после закрытия заявки нельзя.
+ */
+export const CALCULATION_ALLOWED_STATUSES: readonly PaymentOrderStatus[] = [
+  "in_review",
+  "sent_to_bank",
+  "awaiting_closing_documents",
+  "closing_documents_review",
+  "correction_review",
+];
+
 export function canTransitionPaymentOrderStatus(
   from: PaymentOrderStatus,
   to: PaymentOrderStatus,

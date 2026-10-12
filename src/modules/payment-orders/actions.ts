@@ -23,7 +23,10 @@ import {
 } from "@/modules/shared/schemas";
 import type { ActionResult, CurrencyCode } from "@/modules/shared/types";
 import { calculateClientChargeStub, calculateCostStub } from "./pricing";
-import { canTransitionPaymentOrderStatus } from "./status-transitions";
+import {
+  CALCULATION_ALLOWED_STATUSES,
+  canTransitionPaymentOrderStatus,
+} from "./status-transitions";
 import { toClientPaymentOrder } from "./types";
 import type {
   ClientPaymentOrder,
@@ -430,6 +433,12 @@ export async function calculateClientCharge(
     (o) => o.id === parsed.data.paymentOrderId,
   );
   if (!order) return { ok: false, error: "Заявка не найдена" };
+  if (!CALCULATION_ALLOWED_STATUSES.includes(order.status)) {
+    return {
+      ok: false,
+      error: `Расчёт недоступен в статусе «${order.status}»`,
+    };
+  }
   if (!order.amount) return { ok: false, error: "У заявки не указана сумма" };
   const organization = store.organizations.find(
     (o) => o.id === order.organizationId,
@@ -500,6 +509,12 @@ export async function calculateCost(
     (o) => o.id === parsed.data.paymentOrderId,
   );
   if (!order) return { ok: false, error: "Заявка не найдена" };
+  if (!CALCULATION_ALLOWED_STATUSES.includes(order.status)) {
+    return {
+      ok: false,
+      error: `Расчёт недоступен в статусе «${order.status}»`,
+    };
+  }
   if (!order.amount) return { ok: false, error: "У заявки не указана сумма" };
   if (!order.clientChargeRub) {
     return { ok: false, error: "Сначала выполните расчёт для клиента" };
