@@ -4,14 +4,15 @@ import { z } from "zod";
 import { createId, getStore, mockLatency } from "@/mocks/store";
 import { requireManager } from "@/modules/auth/guards";
 import { postInternalTransferExecuted } from "@/modules/ledger/post";
+import { isoDateSchema, moneySchema } from "@/modules/shared/schemas";
 import type { ActionResult } from "@/modules/shared/types";
 import type { InternalTransfer } from "./types";
 
 const createSchema = z.object({
   fromInternalAccountId: z.string().min(1),
   toInternalAccountId: z.string().min(1),
-  amountRub: z.string().min(1, "Укажите сумму"),
-  transferDate: z.string().min(1),
+  amountRub: moneySchema,
+  transferDate: isoDateSchema,
   note: z.string().default(""),
 });
 

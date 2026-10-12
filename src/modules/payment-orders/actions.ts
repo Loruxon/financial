@@ -11,6 +11,12 @@ import {
   postPaymentOrderHold,
   postPaymentOrderHoldAdjusted,
 } from "@/modules/ledger/post";
+import {
+  isoDateSchema,
+  moneySchema,
+  percentSchema,
+  rateSchema,
+} from "@/modules/shared/schemas";
 import type { ActionResult, CurrencyCode } from "@/modules/shared/types";
 import { calculateClientChargeStub, calculateCostStub } from "./pricing";
 import { canTransitionPaymentOrderStatus } from "./status-transitions";
@@ -32,15 +38,15 @@ const CURRENCIES = [
 ] as const satisfies readonly CurrencyCode[];
 
 const submitPaymentOrderSchema = z.object({
-  invoiceNumber: z.string().min(1, "Укажите номер счёта"),
-  amount: z.string().min(1, "Укажите сумму"),
+  invoiceNumber: z.string().min(1, "Укажите номер инвойса"),
+  amount: moneySchema,
   currency: z.enum(CURRENCIES),
   paymentDetails: z.string().default(""),
   beneficiaryId: z.string().min(1, "Выберите контрагента"),
   incomingPaymentIds: z
     .array(z.string())
     .min(1, "Выберите хотя бы одно поступление"),
-  fundingAmountRub: z.string().min(1, "Укажите сумму фондирования"),
+  fundingAmountRub: moneySchema,
 });
 
 export type SubmitPaymentOrderInput = z.infer<typeof submitPaymentOrderSchema>;
@@ -283,8 +289,8 @@ export async function changePaymentOrderStatus(
 
 const calculateClientChargeSchema = z.object({
   paymentOrderId: z.string().min(1),
-  executionDate: z.string().min(1, "Укажите дату исполнения"),
-  clientExchangeRate: z.string().min(1, "Укажите курс"),
+  executionDate: isoDateSchema,
+  clientExchangeRate: rateSchema,
 });
 
 export type CalculateClientChargeInput = z.infer<
@@ -354,9 +360,9 @@ export async function calculateClientCharge(
 
 const calculateCostSchema = z.object({
   paymentOrderId: z.string().min(1),
-  costExecutionDate: z.string().min(1, "Укажите дату исполнения"),
-  costExchangeRate: z.string().min(1, "Укажите курс"),
-  costMarkupPercent: z.string().min(1, "Укажите надбавку"),
+  costExecutionDate: isoDateSchema,
+  costExchangeRate: rateSchema,
+  costMarkupPercent: percentSchema,
 });
 
 export type CalculateCostInput = z.infer<typeof calculateCostSchema>;

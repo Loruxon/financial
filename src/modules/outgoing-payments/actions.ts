@@ -4,12 +4,13 @@ import { z } from "zod";
 import { createId, getStore, mockLatency } from "@/mocks/store";
 import { requireManager } from "@/modules/auth/guards";
 import { postOutgoingPaymentExecuted } from "@/modules/ledger/post";
+import { moneySchema } from "@/modules/shared/schemas";
 import type { ActionResult } from "@/modules/shared/types";
 import type { OutgoingPayment } from "./types";
 
 const createSchema = z.object({
   invoiceNumber: z.string().min(1),
-  amountRub: z.string().min(1, "Укажите сумму"),
+  amountRub: moneySchema,
   supplierId: z.string().min(1, "Выберите поставщика"),
   internalAccountId: z.string().min(1),
   paymentOrderIds: z.array(z.string()).default([]),

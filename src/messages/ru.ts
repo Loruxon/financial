@@ -26,6 +26,10 @@ export const messages = {
       forbidden: "Недостаточно прав",
       validation: "Проверьте правильность заполнения полей",
       allFieldsRequired: "Заполните все поля",
+      invalidMoney: "Сумма указана неверно",
+      invalidRate: "Курс указан неверно",
+      invalidPercent: "Процент указан неверно",
+      invalidDate: "Дата указана неверно",
     },
     dateFormat: "дд.мм.гггг",
     theme: {
