@@ -3,13 +3,80 @@
 // Project rule: files in src/components/ui are never hand-edited.
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import {
+  appendFileSync,
+  cpSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const rootDir = path.resolve(fileURLToPath(import.meta.url), "../..");
 const uiDir = path.join(rootDir, "src/components/ui");
 const componentsListPath = path.join(rootDir, "scripts/ui-components.json");
+
+if (process.argv.includes("--self-test")) {
+  runSelfTest();
+  process.exit(process.exitCode ?? 0);
+}
+
+/**
+ * Регрессионный тест самой проверки: копирует проект во временную папку,
+ * портит там button.tsx и убеждается, что проверка на этой копии падает.
+ * Ловит случай, когда формат вывода `shadcn add --dry-run` изменился и
+ * проверка перестала замечать руками изменённые файлы.
+ */
+function runSelfTest() {
+  const tempDir = mkdtempSync(path.join(tmpdir(), "check-ui-self-test-"));
+  try {
+    const skip = new Set(["node_modules", ".next", ".git"]);
+    cpSync(rootDir, tempDir, {
+      recursive: true,
+      filter: (src) => !skip.has(path.basename(src)),
+    });
+    symlinkSync(
+      path.join(rootDir, "node_modules"),
+      path.join(tempDir, "node_modules"),
+      "dir",
+    );
+
+    appendFileSync(
+      path.join(tempDir, "src/components/ui/button.tsx"),
+      "\n// self-test mutation\n",
+    );
+
+    let failed = false;
+    try {
+      execFileSync(
+        "node",
+        [path.join(tempDir, "scripts/check-ui-pristine.mjs")],
+        { cwd: tempDir, stdio: "pipe" },
+      );
+    } catch {
+      failed = true;
+    }
+
+    if (!failed) {
+      console.error(
+        "check:ui --self-test — проверка НЕ заметила испорченный button.tsx в копии. " +
+          "Формат вывода `shadcn add --dry-run`, вероятно, изменился.",
+      );
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log(
+      "check:ui --self-test — OK: проверка корректно падает на изменённом components/ui.",
+    );
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
 
 const components = JSON.parse(readFileSync(componentsListPath, "utf8"));
 
