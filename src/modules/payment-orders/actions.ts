@@ -569,6 +569,36 @@ export async function updatePaymentOrderAssignment(
   );
   if (!order) return { ok: false, error: "Заявка не найдена" };
 
+  if (parsed.data.assigneeUserId) {
+    const assignee = store.users.find(
+      (u) => u.id === parsed.data.assigneeUserId,
+    );
+    if (
+      !assignee ||
+      assignee.kind !== "manager" ||
+      !assignee.isActive ||
+      !(
+        assignee.hasFullManagerAccess ||
+        assignee.managerSections.includes("payment_orders")
+      )
+    ) {
+      return {
+        ok: false,
+        error:
+          "Исполнитель должен быть активным менеджером с доступом к заявкам",
+      };
+    }
+  }
+
+  if (parsed.data.executionSchemeId) {
+    const scheme = store.executionSchemes.find(
+      (s) => s.id === parsed.data.executionSchemeId,
+    );
+    if (!scheme || scheme.archivedAt) {
+      return { ok: false, error: "Схема исполнения не найдена или архивна" };
+    }
+  }
+
   order.assigneeUserId = parsed.data.assigneeUserId;
   order.executionSchemeId = parsed.data.executionSchemeId;
   order.updatedAt = new Date().toISOString();
@@ -636,14 +666,23 @@ export async function updatePaymentOrderNote(
   return { ok: true, data: order };
 }
 
-const requestCorrectionSchema = z.object({
-  paymentOrderId: z.string().min(1),
-  comment: z.string().min(1, "Опишите, что нужно исправить"),
-  canClientEditPayment: z.boolean(),
-  canClientEditPayer: z.boolean(),
-  canClientEditDocuments: z.boolean(),
-  canClientEditClosingDocuments: z.boolean(),
-});
+const requestCorrectionSchema = z
+  .object({
+    paymentOrderId: z.string().min(1),
+    comment: z.string().min(1, "Опишите, что нужно исправить"),
+    canClientEditPayment: z.boolean(),
+    canClientEditPayer: z.boolean(),
+    canClientEditDocuments: z.boolean(),
+    canClientEditClosingDocuments: z.boolean(),
+  })
+  .refine(
+    (data) =>
+      data.canClientEditPayment ||
+      data.canClientEditPayer ||
+      data.canClientEditDocuments ||
+      data.canClientEditClosingDocuments,
+    "Разрешите клиенту исправить хотя бы один блок",
+  );
 
 export type RequestPaymentOrderCorrectionInput = z.infer<
   typeof requestCorrectionSchema
