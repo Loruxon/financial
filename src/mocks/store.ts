@@ -73,7 +73,7 @@ function createEmptyStore(): Store {
 }
 
 let store: Store = createEmptyStore();
-let nextId = 1;
+let nextIdByPrefix = new Map<string, number>();
 /**
  * true только пока store ни разу не был инициализирован явно. `getStore()`
  * засевает его мок-данными ровно один раз на процесс — любой последующий
@@ -93,12 +93,15 @@ export function getStore(): Store {
 /** Полностью очищает хранилище. Используется перед повторным засевом (тесты, hot reload). */
 export function resetStore(): void {
   store = createEmptyStore();
-  nextId = 1;
+  nextIdByPrefix = new Map();
   autoSeedPending = false;
 }
 
+/** Отдельный счётчик на каждый префикс, чтобы номера сущностей шли подряд (1, 2, 3…). */
 export function createId(prefix: string): string {
-  return `${prefix}_${nextId++}`;
+  const current = nextIdByPrefix.get(prefix) ?? 1;
+  nextIdByPrefix.set(prefix, current + 1);
+  return `${prefix}_${current}`;
 }
 
 const latencyDisabled =
