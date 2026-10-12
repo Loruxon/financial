@@ -46,16 +46,16 @@ export async function listIncomingPaymentsForPaymentOrder(
  * разнесённым по другим заявкам — для формы подачи новой заявки.
  */
 export async function listConfirmedIncomingPaymentsForOrganization(): Promise<
-  { payment: IncomingPayment; remainder: Money }[]
+  { payment: IncomingPayment; payerName: string; remainder: Money }[]
 > {
   const user = await requireClient();
   await mockLatency();
   const store = getStore();
-  const orgPayerIds = new Set(
-    store.payers
-      .filter((p) => p.organizationId === user.organizationId)
-      .map((p) => p.id),
+  const orgPayers = store.payers.filter(
+    (p) => p.organizationId === user.organizationId,
   );
+  const orgPayerIds = new Set(orgPayers.map((p) => p.id));
+  const payerName = new Map(orgPayers.map((p) => [p.id, p.name]));
 
   return store.incomingPayments
     .filter(
@@ -70,7 +70,11 @@ export async function listConfirmedIncomingPaymentsForOrganization(): Promise<
       const remainder = new Decimal(payment.amountRub)
         .minus(allocated)
         .toFixed(2);
-      return { payment, remainder };
+      return {
+        payment,
+        payerName: payerName.get(payment.payerId!) ?? "",
+        remainder,
+      };
     })
     .filter(({ remainder }) => new Decimal(remainder).greaterThan(0));
 }

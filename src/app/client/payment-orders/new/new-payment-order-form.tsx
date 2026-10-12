@@ -57,7 +57,11 @@ type BeneficiaryWithBanking = {
   account: BeneficiaryAccount | undefined;
 };
 
-type IncomingPaymentOption = { payment: IncomingPayment; remainder: string };
+type IncomingPaymentOption = {
+  payment: IncomingPayment;
+  payerName: string;
+  remainder: string;
+};
 
 type NewPaymentOrderFormProps = {
   beneficiaries: BeneficiaryWithBanking[];
@@ -308,13 +312,16 @@ export function NewPaymentOrderForm({
                   <TableHead>
                     {messages.incomingPayments.fields.paymentDate}
                   </TableHead>
+                  <TableHead>
+                    {messages.incomingPayments.fields.payer}
+                  </TableHead>
                   <TableHead className="text-right">
                     {messages.paymentOrders.fields.clientRemainderRub}
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {incomingPayments.map(({ payment, remainder }) => (
+                {incomingPayments.map(({ payment, payerName, remainder }) => (
                   <TableRow key={payment.id}>
                     <TableCell>
                       <Checkbox
@@ -325,6 +332,7 @@ export function NewPaymentOrderForm({
                       />
                     </TableCell>
                     <TableCell>{formatDate(payment.paymentDate)}</TableCell>
+                    <TableCell>{payerName}</TableCell>
                     <TableCell className="text-right">
                       <Money value={remainder} />
                     </TableCell>
@@ -364,12 +372,22 @@ export function NewPaymentOrderForm({
         <FileUpload documentTypes={DOCUMENT_TYPES} onFilesChange={setFiles} />
       </FormSection>
 
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="ghost" onClick={handleCancel}>
-          {messages.common.actions.cancel}
-        </Button>
-        <Button type="button" onClick={handleSubmit} disabled={isPending}>
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          className="w-full"
+          onClick={handleSubmit}
+          disabled={isPending}
+        >
           {messages.paymentOrders.actions.submit}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={handleCancel}
+        >
+          {messages.common.actions.cancel}
         </Button>
       </div>
 
