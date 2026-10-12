@@ -183,7 +183,6 @@ function seedIncomingPayments(rng: () => number): IncomingPayment[] {
       status: isConfirmed ? "confirmed" : "pending",
       confirmedAt,
       confirmedByUserId,
-      paymentOrderIds: [],
       createdByUserId: CLIENT_USER_BY_ORG[org.id] ?? null,
       createdAt: `${paymentDate}T09:00:00.000Z`,
     };
@@ -256,6 +255,7 @@ function seedPaymentOrders(
     "correction_review",
   ];
   const orders: PaymentOrder[] = [];
+  const allocatedIncomingPaymentIds = new Set<string>();
 
   for (let i = 0; i < 30; i++) {
     const status = statuses[i % statuses.length]!;
@@ -458,13 +458,18 @@ function seedPaymentOrders(
       const candidate = incomingPayments.find(
         (p) =>
           p.status === "confirmed" &&
-          p.paymentOrderIds.length === 0 &&
+          !allocatedIncomingPaymentIds.has(p.id) &&
           new Decimal(p.amountRub).gte(fundingAmountRub) &&
           refs.payers.find((payer2) => payer2.id === p.payerId)
             ?.organizationId === org.id,
       );
       if (candidate) {
-        candidate.paymentOrderIds.push(id);
+        allocatedIncomingPaymentIds.add(candidate.id);
+        store.paymentOrderIncomingPayments.push({
+          paymentOrderId: id,
+          incomingPaymentId: candidate.id,
+          allocatedAmountRub: fundingAmountRub,
+        });
       }
     }
   }

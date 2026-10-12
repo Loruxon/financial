@@ -5,7 +5,11 @@ import { z } from "zod";
 import { createId, getStore, mockLatency } from "@/mocks/store";
 import { requireClient, requireManager } from "@/modules/auth/guards";
 import { getCurrentUser } from "@/modules/auth/session";
-import { getPaymentOrderHeldAmount } from "@/modules/ledger/queries";
+import { getIncomingPaymentRemainder } from "@/modules/incoming-payments/queries";
+import {
+  getOrganizationAvailableBalance,
+  getPaymentOrderHeldAmount,
+} from "@/modules/ledger/queries";
 import {
   postPaymentOrderClosed,
   postPaymentOrderHold,
@@ -37,16 +41,35 @@ const CURRENCIES = [
   "KZT",
 ] as const satisfies readonly CurrencyCode[];
 
+const FILE_TYPES = [
+  "invoice",
+  "contract_request",
+  "customs_declaration",
+  "transport",
+  "swift_confirmation",
+  "order_form",
+  "other",
+] as const satisfies readonly PaymentOrderFileType[];
+
+const fileInputSchema = z.object({
+  fileType: z.enum(FILE_TYPES),
+  originalName: z.string().min(1),
+  sizeBytes: z.number().int().nonnegative(),
+});
+
 const submitPaymentOrderSchema = z.object({
   invoiceNumber: z.string().min(1, "Укажите номер инвойса"),
   amount: moneySchema,
   currency: z.enum(CURRENCIES),
   paymentDetails: z.string().default(""),
   beneficiaryId: z.string().min(1, "Выберите контрагента"),
+  beneficiaryBankId: z.string().min(1, "Выберите банк контрагента"),
+  beneficiaryAccountId: z.string().min(1, "Выберите счёт контрагента"),
   incomingPaymentIds: z
     .array(z.string())
     .min(1, "Выберите хотя бы одно поступление"),
   fundingAmountRub: moneySchema,
+  files: z.array(fileInputSchema).default([]),
 });
 
 export type SubmitPaymentOrderInput = z.infer<typeof submitPaymentOrderSchema>;
@@ -73,14 +96,26 @@ export async function submitPaymentOrder(
   );
   if (!beneficiary) return { ok: false, error: "Контрагент не найден" };
   const bank = store.beneficiaryBanks.find(
-    (b) => b.beneficiaryId === beneficiary.id,
+    (b) =>
+      b.id === parsed.data.beneficiaryBankId &&
+      b.beneficiaryId === beneficiary.id,
   );
-  const account = bank
-    ? store.beneficiaryAccounts.find((a) => a.beneficiaryBankId === bank.id)
-    : undefined;
+  if (!bank) return { ok: false, error: "Банк контрагента не найден" };
+  const account = store.beneficiaryAccounts.find(
+    (a) =>
+      a.id === parsed.data.beneficiaryAccountId &&
+      a.beneficiaryBankId === bank.id,
+  );
+  if (!account) return { ok: false, error: "Счёт контрагента не найден" };
+  if (!account.currencies.includes(parsed.data.currency)) {
+    return {
+      ok: false,
+      error: "Счёт контрагента не принимает выбранную валюту",
+    };
+  }
 
-  // Плательщик, счёт зачисления и дата фондирования — из выбранных поступлений,
-  // а не напрямую от клиента: внутренние счета клиенту не показываются никогда.
+  // Плательщик и счёт зачисления — из выбранных поступлений, а не напрямую
+  // от клиента: внутренние счета клиенту не показываются никогда.
   const incomingPayments = parsed.data.incomingPaymentIds.map((paymentId) =>
     store.incomingPayments.find((p) => p.id === paymentId),
   );
@@ -90,19 +125,70 @@ export async function submitPaymentOrder(
   const payments = incomingPayments as NonNullable<
     (typeof incomingPayments)[number]
   >[];
+
+  for (const payment of payments) {
+    if (payment.status !== "confirmed") {
+      return { ok: false, error: "Поступление не подтверждено" };
+    }
+    const payer = payment.payerId
+      ? store.payers.find((p) => p.id === payment.payerId)
+      : undefined;
+    if (!payer || payer.organizationId !== user.organizationId) {
+      return {
+        ok: false,
+        error: "Поступление принадлежит другой организации",
+      };
+    }
+  }
   const firstPayment = payments[0]!;
-  if (firstPayment.status !== "confirmed" || !firstPayment.payerId) {
-    return { ok: false, error: "Поступление не подтверждено" };
+  if (
+    payments.some(
+      (p) =>
+        p.payerId !== firstPayment.payerId ||
+        p.internalAccountId !== firstPayment.internalAccountId,
+    )
+  ) {
+    return {
+      ok: false,
+      error:
+        "Выбранные поступления должны быть от одного плательщика и на один счёт зачисления",
+    };
   }
-  const payer = store.payers.find((p) => p.id === firstPayment.payerId);
-  if (!payer || payer.organizationId !== user.organizationId) {
-    return { ok: false, error: "Поступление принадлежит другой организации" };
+
+  const remainders = payments.map((p) => ({
+    payment: p,
+    remainder: getIncomingPaymentRemainder(p),
+  }));
+  const totalRemainder = remainders.reduce(
+    (sum, r) => sum.plus(r.remainder),
+    new Decimal(0),
+  );
+  if (totalRemainder.lessThan(parsed.data.fundingAmountRub)) {
+    return {
+      ok: false,
+      error: "Сумма фондирования больше остатка выбранных поступлений",
+    };
   }
+  const availableBalance = getOrganizationAvailableBalance(
+    user.organizationId!,
+  );
+  if (new Decimal(availableBalance).lessThan(parsed.data.fundingAmountRub)) {
+    return {
+      ok: false,
+      error: "Сумма фондирования больше свободного остатка организации",
+    };
+  }
+
+  const payer = store.payers.find((p) => p.id === firstPayment.payerId)!;
   const internalAccount = firstPayment.internalAccountId
     ? store.internalAccounts.find(
         (a) => a.id === firstPayment.internalAccountId,
       )
     : undefined;
+  const fundingDate = payments.reduce(
+    (latest, p) => (p.paymentDate > latest ? p.paymentDate : latest),
+    payments[0]!.paymentDate,
+  );
 
   const now = new Date().toISOString();
   const id = createId("payment_order");
@@ -120,20 +206,20 @@ export async function submitPaymentOrder(
     paymentDetails: parsed.data.paymentDetails,
 
     beneficiaryId: beneficiary.id,
-    beneficiaryBankId: bank?.id ?? null,
+    beneficiaryBankId: bank.id,
     beneficiaryName: beneficiary.name,
     beneficiaryAddress: beneficiary.address,
-    beneficiaryBankName: bank?.name ?? "",
-    beneficiaryBankAddress: bank?.address ?? "",
-    beneficiarySwiftCode: bank?.swiftCode ?? "",
-    beneficiaryAccountNumber: account?.accountNumber ?? "",
-    beneficiaryAccountCurrencies: account?.currencies ?? [],
+    beneficiaryBankName: bank.name,
+    beneficiaryBankAddress: bank.address,
+    beneficiarySwiftCode: bank.swiftCode,
+    beneficiaryAccountNumber: account.accountNumber,
+    beneficiaryAccountCurrencies: account.currencies,
 
     payerName: payer.name,
     payerInn: payer.inn,
     internalAccountName: internalAccount?.name ?? "",
     fundingAmountRub: parsed.data.fundingAmountRub,
-    fundingDate: firstPayment.paymentDate,
+    fundingDate,
 
     executionDate: null,
     clientExchangeRate: null,
@@ -181,8 +267,36 @@ export async function submitPaymentOrder(
     createdByUserId: user.id,
   });
 
-  for (const payment of payments) {
-    payment.paymentOrderIds.push(id);
+  // Распределяем сумму фондирования по поступлениям в порядке дат (сначала старые).
+  let remainingToAllocate = new Decimal(parsed.data.fundingAmountRub);
+  const sortedRemainders = [...remainders].sort((a, b) =>
+    a.payment.paymentDate.localeCompare(b.payment.paymentDate),
+  );
+  for (const { payment, remainder } of sortedRemainders) {
+    if (remainingToAllocate.lessThanOrEqualTo(0)) break;
+    const allocated = Decimal.min(remainingToAllocate, remainder);
+    if (allocated.greaterThan(0)) {
+      store.paymentOrderIncomingPayments.push({
+        paymentOrderId: id,
+        incomingPaymentId: payment.id,
+        allocatedAmountRub: allocated.toFixed(2),
+      });
+      remainingToAllocate = remainingToAllocate.minus(allocated);
+    }
+  }
+
+  for (const file of parsed.data.files) {
+    store.paymentOrderFiles.push({
+      id: createId("po_file"),
+      paymentOrderId: id,
+      section: "payment",
+      fileType: file.fileType,
+      isUploadedByManager: false,
+      originalName: file.originalName,
+      sizeBytes: file.sizeBytes,
+      uploadedByUserId: user.id,
+      uploadedAt: now,
+    });
   }
 
   return { ok: true, data: toClientPaymentOrder(order) };
@@ -575,16 +689,6 @@ export async function requestPaymentOrderCorrection(
 
   return { ok: true, data: order };
 }
-
-const FILE_TYPES = [
-  "invoice",
-  "contract_request",
-  "customs_declaration",
-  "transport",
-  "swift_confirmation",
-  "order_form",
-  "other",
-] as const satisfies readonly PaymentOrderFileType[];
 
 const addFileSchema = z.object({
   paymentOrderId: z.string().min(1),

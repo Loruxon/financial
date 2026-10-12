@@ -8,6 +8,23 @@ export type IncomingPaymentFilter = {
   status?: IncomingPaymentStatus;
 };
 
+/** Сколько от этого поступления уже распределено по заявкам. */
+export function getAllocatedAmount(incomingPaymentId: string): Money {
+  return getStore()
+    .paymentOrderIncomingPayments.filter(
+      (a) => a.incomingPaymentId === incomingPaymentId,
+    )
+    .reduce((sum, a) => sum.plus(a.allocatedAmountRub), new Decimal(0))
+    .toFixed(2);
+}
+
+/** Остаток поступления: сумма минус уже распределённое по заявкам. */
+export function getIncomingPaymentRemainder(payment: IncomingPayment): Money {
+  return new Decimal(payment.amountRub)
+    .minus(getAllocatedAmount(payment.id))
+    .toFixed(2);
+}
+
 export async function listIncomingPayments(
   filter: IncomingPaymentFilter = {},
 ): Promise<IncomingPayment[]> {
@@ -36,9 +53,13 @@ export async function listIncomingPaymentsForPaymentOrder(
 ): Promise<IncomingPayment[]> {
   await requireManager("payment_orders");
   await mockLatency();
-  return getStore().incomingPayments.filter((p) =>
-    p.paymentOrderIds.includes(paymentOrderId),
+  const store = getStore();
+  const incomingPaymentIds = new Set(
+    store.paymentOrderIncomingPayments
+      .filter((a) => a.paymentOrderId === paymentOrderId)
+      .map((a) => a.incomingPaymentId),
   );
+  return store.incomingPayments.filter((p) => incomingPaymentIds.has(p.id));
 }
 
 /**
@@ -62,19 +83,10 @@ export async function listConfirmedIncomingPaymentsForOrganization(): Promise<
       (p) =>
         p.status === "confirmed" && p.payerId && orgPayerIds.has(p.payerId),
     )
-    .map((payment) => {
-      const allocated = payment.paymentOrderIds.reduce((sum, orderId) => {
-        const order = store.paymentOrders.find((o) => o.id === orderId);
-        return order?.fundingAmountRub ? sum.plus(order.fundingAmountRub) : sum;
-      }, new Decimal(0));
-      const remainder = new Decimal(payment.amountRub)
-        .minus(allocated)
-        .toFixed(2);
-      return {
-        payment,
-        payerName: payerName.get(payment.payerId!) ?? "",
-        remainder,
-      };
-    })
+    .map((payment) => ({
+      payment,
+      payerName: payerName.get(payment.payerId!) ?? "",
+      remainder: getIncomingPaymentRemainder(payment),
+    }))
     .filter(({ remainder }) => new Decimal(remainder).greaterThan(0));
 }

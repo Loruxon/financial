@@ -11,8 +11,17 @@ export type IncomingPayment = {
   status: IncomingPaymentStatus;
   confirmedAt: IsoDateTime | null;
   confirmedByUserId: string | null;
-  /** Заявки, к которым привязано поступление. */
-  paymentOrderIds: string[];
   createdByUserId: string | null;
   createdAt: IsoDateTime;
+};
+
+/**
+ * Разнесение фондирования заявки по поступлениям — заготовка под будущую
+ * таблицу `payment_order_incoming_payments` (раздел 5 target-design.md),
+ * расширенную суммой распределения.
+ */
+export type PaymentOrderIncomingPaymentAllocation = {
+  paymentOrderId: string;
+  incomingPaymentId: string;
+  allocatedAmountRub: Money;
 };

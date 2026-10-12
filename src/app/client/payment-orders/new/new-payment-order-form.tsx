@@ -41,10 +41,7 @@ import type {
   BeneficiaryBank,
 } from "@/modules/beneficiaries/types";
 import type { IncomingPayment } from "@/modules/incoming-payments/types";
-import {
-  addPaymentOrderFile,
-  submitPaymentOrder,
-} from "@/modules/payment-orders/actions";
+import { submitPaymentOrder } from "@/modules/payment-orders/actions";
 import {
   getPaymentOrderNumber,
   type PaymentOrderFileType,
@@ -135,6 +132,9 @@ export function NewPaymentOrderForm({
     const next: Record<string, string> = {};
     const v = messages.paymentOrders.validation;
     if (!beneficiaryId) next.beneficiaryId = v.beneficiaryRequired;
+    else if (!selected?.bank || !selected.account) {
+      next.beneficiaryId = v.beneficiaryRequired;
+    }
     if (!invoiceNumber.trim()) next.invoiceNumber = v.invoiceNumberRequired;
     if (!amount || Number(amount) <= 0) next.amount = v.amountRequired;
     if (!currency) next.currency = v.currencyRequired;
@@ -163,22 +163,19 @@ export function NewPaymentOrderForm({
         currency: currency!,
         paymentDetails,
         beneficiaryId: beneficiaryId!,
+        beneficiaryBankId: selected!.bank!.id,
+        beneficiaryAccountId: selected!.account!.id,
         incomingPaymentIds: selectedPaymentIds,
         fundingAmountRub,
+        files: files.map((entry) => ({
+          fileType: entry.fileType,
+          originalName: entry.file.name,
+          sizeBytes: entry.file.size,
+        })),
       });
       if (!result.ok) {
         toast.error(result.error);
         return;
-      }
-      for (const entry of files) {
-        const fileResult = await addPaymentOrderFile({
-          paymentOrderId: result.data.id,
-          section: "payment",
-          fileType: entry.fileType,
-          originalName: entry.file.name,
-          sizeBytes: entry.file.size,
-        });
-        if (!fileResult.ok) toast.error(fileResult.error);
       }
       toast.success(
         `${messages.paymentOrders.titleOne} № ${getPaymentOrderNumber(result.data.id)} ${messages.paymentOrders.submitted}`,

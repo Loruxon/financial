@@ -13,7 +13,10 @@ import type {
   PaymentOrderFile,
   PaymentOrderStatusChange,
 } from "@/modules/payment-orders/types";
-import type { IncomingPayment } from "@/modules/incoming-payments/types";
+import type {
+  IncomingPayment,
+  PaymentOrderIncomingPaymentAllocation,
+} from "@/modules/incoming-payments/types";
 import type { InternalTransfer } from "@/modules/internal-transfers/types";
 import type {
   OutgoingPayment,
@@ -40,6 +43,7 @@ export type Store = {
   paymentOrderStatusChanges: PaymentOrderStatusChange[];
   paymentOrderFiles: PaymentOrderFile[];
   incomingPayments: IncomingPayment[];
+  paymentOrderIncomingPayments: PaymentOrderIncomingPaymentAllocation[];
   internalTransfers: InternalTransfer[];
   outgoingPayments: OutgoingPayment[];
   suppliers: Supplier[];
@@ -63,6 +67,7 @@ function createEmptyStore(): Store {
     paymentOrderStatusChanges: [],
     paymentOrderFiles: [],
     incomingPayments: [],
+    paymentOrderIncomingPayments: [],
     internalTransfers: [],
     outgoingPayments: [],
     suppliers: [],
