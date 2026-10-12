@@ -20,7 +20,7 @@ import {
   Download,
   SlidersHorizontal,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -147,26 +147,36 @@ export function DataTable<TData>({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  function exportToExcel() {
+  async function exportToExcel() {
     const leafColumns = table
       .getVisibleLeafColumns()
       .filter((c) => c.id !== "__actions");
+    const headers = leafColumns.map((column) =>
+      typeof column.columnDef.meta?.exportHeader === "string"
+        ? column.columnDef.meta.exportHeader
+        : ((column.columnDef.header as string) ?? column.id),
+    );
     const rows = table
       .getSortedRowModel()
       .rows.map((row) =>
-        Object.fromEntries(
-          leafColumns.map((column) => [
-            typeof column.columnDef.meta?.exportHeader === "string"
-              ? column.columnDef.meta.exportHeader
-              : ((column.columnDef.header as string) ?? column.id),
-            row.getValue(column.id) ?? "",
-          ]),
-        ),
+        leafColumns.map((column) => row.getValue(column.id) ?? ""),
       );
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "Data");
-    XLSX.writeFile(workbook, `${exportFileName}.xlsx`);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Data");
+    sheet.addRow(headers);
+    for (const row of rows) sheet.addRow(row);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${exportFileName}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   const rows = table.getRowModel().rows;
