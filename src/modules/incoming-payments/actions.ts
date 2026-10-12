@@ -7,6 +7,7 @@ import {
   postIncomingPaymentConfirmed,
   postReversal,
 } from "@/modules/ledger/post";
+import { getPaymentOrderNumber } from "@/modules/payment-orders/types";
 import type { ActionResult } from "@/modules/shared/types";
 import type { IncomingPayment } from "./types";
 
@@ -66,6 +67,16 @@ export async function unconfirmIncomingPayment(
   if (!payment) return { ok: false, error: "Поступление не найдено" };
   if (payment.status !== "confirmed") {
     return { ok: false, error: "Поступление не подтверждено" };
+  }
+
+  const allocatedOrderNumbers = store.paymentOrderIncomingPayments
+    .filter((a) => a.incomingPaymentId === payment.id)
+    .map((a) => getPaymentOrderNumber(a.paymentOrderId));
+  if (allocatedOrderNumbers.length > 0) {
+    return {
+      ok: false,
+      error: `Поступление используется в заявках № ${allocatedOrderNumbers.join(", ")}`,
+    };
   }
 
   const transaction = store.ledgerTransactions.find(
